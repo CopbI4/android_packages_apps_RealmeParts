@@ -30,7 +30,6 @@ import androidx.preference.PreferenceManager;
 @TargetApi(24)
 public class GameModeTileService extends TileService {
     private boolean enabled = false;
-    private Context mContext;
     private NotificationManager mNotificationManager;
 
     @Override
@@ -73,8 +72,9 @@ public class GameModeTileService extends TileService {
         } else AppNotification.Cancel(this, GameModeSwitch.GameMode_Notification_Channel_ID);
         Utils.writeValue(GameModeSwitch.getFile(), enabled ? "0" : "1");
         Utils.writeValue(DeviceSettings.TP_LIMIT_ENABLE, enabled ? "1" : "0");
-        Utils.writeValue(DeviceSettings.TP_DIRECTION, enabled ? "0" : "1");
         SystemProperties.set("perf_profile", enabled ? "0" : "1");
+        if (enabled) Utils.stopService(this, GameModeRotationService.class);
+        else Utils.startService(this, GameModeRotationService.class);
         if (sharedPrefs.getBoolean("dnd", false)) GameModeTileDND();
         sharedPrefs.edit().putBoolean(DeviceSettings.KEY_GAME_SWITCH, !enabled).commit();
         getQsTile().setState(enabled ? Tile.STATE_INACTIVE : Tile.STATE_ACTIVE);

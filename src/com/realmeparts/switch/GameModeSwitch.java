@@ -98,8 +98,9 @@ public class GameModeSwitch implements OnPreferenceChangeListener {
         Boolean enabled = (Boolean) newValue;
         Utils.writeValue(getFile(), enabled ? "1" : "0");
         Utils.writeValue(DeviceSettings.TP_LIMIT_ENABLE, enabled ? "0" : "1");
-        Utils.writeValue(DeviceSettings.TP_DIRECTION, enabled ? "1" : "0");
         SystemProperties.set("perf_profile", enabled ? "1" : "0");
+        if (enabled) Utils.startService(mContext, GameModeRotationService.class);
+        else Utils.stopService(mContext, GameModeRotationService.class);
         GameModeDND();
         return true;
     }

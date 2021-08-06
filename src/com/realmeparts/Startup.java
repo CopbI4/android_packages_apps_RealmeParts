@@ -69,6 +69,9 @@ public class Startup extends BroadcastReceiver {
 
         enabled = sharedPrefs.getBoolean(DeviceSettings.KEY_GAME_SWITCH, false);
         restore(GameModeSwitch.getFile(), enabled);
+        if (enabled) {
+            Utils.startService(context, GameModeRotationService.class);
+        }
 
         enabled = sharedPrefs.getBoolean(DeviceSettings.KEY_HBM_SWITCH, false);
         restore(HBMModeSwitch.getFile(), enabled);

@@ -163,6 +163,9 @@
                 android:exported="true"
                 android:permission="android.permission.FOREGROUND_SERVICE" >
         </service>
+        <service android:name="com.realmeparts.GameModeRotationService"
+                android:exported="false">
+        </service>
         <service android:name="com.realmeparts.SmartChargingService"
                 android:exported="false">
         </service>
