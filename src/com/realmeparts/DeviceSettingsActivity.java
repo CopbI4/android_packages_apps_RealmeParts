@@ -21,7 +21,6 @@ import android.app.Fragment;
 import android.os.Bundle;
 
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
-import com.android.settingslib.widget.R;
 
 public class DeviceSettingsActivity extends CollapsingToolbarBaseActivity {
 
@@ -31,11 +30,11 @@ public class DeviceSettingsActivity extends CollapsingToolbarBaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Fragment fragment = getFragmentManager().findFragmentById(R.id.content_frame);
+        Fragment fragment = getFragmentManager().findFragmentById(com.android.settingslib.collapsingtoolbar.R.id.content_frame);
         if (fragment == null) {
             mDeviceSettingsFragment = new DeviceSettings();
             getFragmentManager().beginTransaction()
-                    .add(R.id.content_frame, mDeviceSettingsFragment)
+                    .add(com.android.settingslib.collapsingtoolbar.R.id.content_frame, mDeviceSettingsFragment)
                     .commit();
         } else {
             mDeviceSettingsFragment = (DeviceSettings) fragment;
