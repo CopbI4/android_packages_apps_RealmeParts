@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2016 The OmniROM Project
+ * Copyright (C) 2024 Hyperteam
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,6 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 package com.realmeparts;
 
 import android.content.Context;
@@ -24,11 +26,14 @@ import androidx.preference.Preference.OnPreferenceChangeListener;
 
 public class DCModeSwitch implements OnPreferenceChangeListener {
 
-    private static final String FILE = "/sys/kernel/oppo_display/dimlayer_bl_en";
+    private static final String FILE1 = "/sys/kernel/oppo_display/dimlayer_bl_en";
+    private static final String FILE2 = "/sys/kernel/oplus_display/dimlayer_bl_en";
 
     public static String getFile() {
-        if (Utils.fileWritable(FILE)) {
-            return FILE;
+        if (Utils.fileWritable(FILE1)) {
+            return FILE1;
+        } else if (Utils.fileWritable(FILE2)) {
+            return FILE2;
         }
         return null;
     }

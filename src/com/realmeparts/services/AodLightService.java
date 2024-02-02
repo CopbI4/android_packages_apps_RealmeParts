@@ -38,8 +38,17 @@ import java.util.concurrent.TimeUnit;
 
 public class AodLightService extends Service {
     private static final String TAG = "AodLightService";
-    private static final String POWER_STATUS_PATH = "/sys/kernel/oppo_display/power_status";
-    private static final String LIGHT_MODE_PATH = "/sys/kernel/oppo_display/aod_light_mode_set";
+
+    private static final String[] POWER_STATUS_PATHS = {
+        "/sys/kernel/oppo_display/power_status",
+        "/sys/kernel/oplus_display/power_status"
+    };
+
+    private static final String[] LIGHT_MODE_PATHS = {
+        "/sys/kernel/oppo_display/aod_light_mode_set",
+        "/sys/kernel/oplus_display/aod_light_mode_set"
+    };
+
     private static final String CHANNEL_ID = "AodLightServiceChannel";
 
     private ScheduledExecutorService scheduler;
@@ -82,21 +91,26 @@ public class AodLightService extends Service {
     }
 
     private int readPowerStatus() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(POWER_STATUS_PATH))) {
-            String line = reader.readLine();
-            return Integer.parseInt(line.trim());
-        } catch (IOException | NumberFormatException e) {
-            Log.e(TAG, "Error reading power status", e);
-            return -1;
+        for (String path : POWER_STATUS_PATHS) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+                String line = reader.readLine();
+                return Integer.parseInt(line.trim());
+            } catch (IOException | NumberFormatException e) {
+                Log.e(TAG, "Error reading power status from " + path, e);
+            }
         }
+        return -1;
     }
 
     private void setLightMode(int mode) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(LIGHT_MODE_PATH))) {
-            writer.write(Integer.toString(mode));
-            writer.flush();
-        } catch (IOException e) {
-            Log.e(TAG, "Error setting light mode", e);
+        for (String path : LIGHT_MODE_PATHS) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+                writer.write(Integer.toString(mode));
+                writer.flush();
+                return;
+            } catch (IOException e) {
+                Log.e(TAG, "Error setting light mode to " + mode + " on " + path, e);
+            }
         }
     }
 
