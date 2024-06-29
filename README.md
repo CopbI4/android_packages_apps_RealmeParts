@@ -32,9 +32,6 @@ Here is a complete detailed list of the features with their caveats and support 
   - USB-OTG power supply for supported external devices,
   - FPS Overlay toogle to show current FPS
 
-- **Screen Refresh Rate Mode**:
-  - Ability to choose between 60Hz or 90Hz,
-  - Smooth Display toggle for forcing display refresh rate to 90Hz
 >TODO: Add Per-App refresh rate setting
 
 - **Smart Charging**:
