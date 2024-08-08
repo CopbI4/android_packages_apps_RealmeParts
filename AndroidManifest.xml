@@ -21,6 +21,7 @@
 
     <uses-permission android:name="android.permission.INJECT_EVENTS"
         tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS"
@@ -156,6 +157,11 @@
                 <action
                     android:name="android.service.quicksettings.action.QS_TILE"/>
             </intent-filter>
+        </service>
+        <service android:name="com.realmeparts.AodLightService"
+                android:enabled="true"
+                android:exported="true"
+                android:permission="android.permission.FOREGROUND_SERVICE" >
         </service>
         <service android:name="com.realmeparts.SmartChargingService"
                 android:exported="false">

@@ -89,7 +89,7 @@ public final class DozeUtils {
         return Settings.Secure.putInt(context.getContentResolver(), "DOZE_ALWAYS_ON".toLowerCase(), enable ? 1 : 0);
     }
 
-    protected static boolean isAlwaysOnEnabled(Context context) {
+    public static boolean isAlwaysOnEnabled(Context context) {
         final boolean enabledByDefault = context.getResources()
                 .getBoolean(com.android.internal.R.bool.config_dozeAlwaysOnEnabled);
 
