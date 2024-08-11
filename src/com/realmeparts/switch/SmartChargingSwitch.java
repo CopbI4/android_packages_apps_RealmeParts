@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2020 The LineageOS Project
+ * Copyright (C) 2024 Hyperteam
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,19 +52,22 @@ public class SmartChargingSwitch implements OnPreferenceChangeListener {
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         Boolean enabled = (Boolean) newValue;
-        if (enabled) {
-            Utils.startService(mContext, com.realmeparts.SmartChargingService.class);
-            DeviceSettings.mSeekBarPreference.setEnabled(true);
-            DeviceSettings.mResetStats.setEnabled(true);
-            DeviceSettings.mChargingSpeed.setEnabled(true);
-        } else {
-            Utils.stopService(mContext, com.realmeparts.SmartChargingService.class);
-            DeviceSettings.mSeekBarPreference.setEnabled(false);
-            DeviceSettings.mResetStats.setEnabled(false);
-            DeviceSettings.mChargingSpeed.setEnabled(false);
-            Utils.writeValue(FILE, "1");
+        try {
+            if (enabled) {
+                Utils.startService(mContext, SmartChargingService.class);
+                DeviceSettings.mSeekBarPreference.setEnabled(true);
+                DeviceSettings.mResetStats.setEnabled(true);
+                DeviceSettings.mChargingSpeed.setEnabled(true);
+            } else {
+                Utils.stopService(mContext, SmartChargingService.class);
+                DeviceSettings.mSeekBarPreference.setEnabled(false);
+                DeviceSettings.mResetStats.setEnabled(false);
+                DeviceSettings.mChargingSpeed.setEnabled(false);
+                Utils.writeValue(FILE, "1");
+            }
+        } catch (Exception e) {
+            Log.e("DeviceSettings", "Error changing preference: " + e.toString());
         }
-        //Utils.writeValue(getFile(), enabled ? "1" : "0");
         return true;
     }
 }

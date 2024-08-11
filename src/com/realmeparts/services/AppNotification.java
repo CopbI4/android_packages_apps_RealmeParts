@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021
+ * Copyright (C) 2021-2024 Hyperteam
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,10 +47,14 @@ public class AppNotification {
         final PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         notificationBuilder.setContentIntent(pendingIntent);
 
-        Notification notification = notificationBuilder.build();
+        notification = notificationBuilder.build();
         notification.flags |= Notification.FLAG_NO_CLEAR;
         mNotificationManager.notify(Notification_Channel_ID, notification);
         NotificationSent = true;
+    }
+
+    public static Notification getNotification() {
+        return notification;
     }
 
     public static void Cancel(Context context, int Notification_Channel_ID) {

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2020 The LineageOS Project
+ * Copyright (C) 2024 Hyperteam
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -11,21 +12,23 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 package com.realmeparts;
 
-import android.app.Notification;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -41,57 +44,23 @@ public class SmartChargingService extends Service {
     public static String mmi_charging_enable = "/sys/class/power_supply/battery/mmi_charging_enable";
     public static String battery_capacity = "/sys/class/power_supply/battery/capacity";
     public static String battery_temperature = "/sys/class/power_supply/battery/temp";
-    private static Notification notification;
     private boolean mconnectionInfoReceiver;
     private SharedPreferences sharedPreferences;
-    public BroadcastReceiver mBatteryInfo = new BroadcastReceiver() {
+    private PowerManager.WakeLock wakeLock;
+    private Handler handler = new Handler();
+
+    private BroadcastReceiver mBatteryInfo = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            float battTemp = ((float) Integer.parseInt(Utils.readLine(battery_temperature))) / 10;
-            int battCap = Integer.parseInt(Utils.readLine(battery_capacity));
-            int coolDown = Integer.parseInt(Utils.readLine(cool_down));
-            int currentmA = -(Integer.parseInt(Utils.readLine(current)));
-            int chargingLimit = Integer.parseInt(Utils.readLine(mmi_charging_enable));
-            int userSelectedChargingLimit = sharedPreferences.getInt("seek_bar", 95);
-            int chargingSpeed = Settings.Secure.getInt(context.getContentResolver(), "charging_speed", 0);
-
-            Log.d("DeviceSettings", "Battery Temperature: " + battTemp + ", Battery Capacity: " + battCap + "%, " + "\n" + "Charging Speed: " + currentmA + " mA, " + "Cool Down: " + coolDown);
-
-            if (isCoolDownAvailable() && chargingLimit == 1) {
-                // Setting cool down values based on user selected charging speed
-                if (chargingSpeed != 0 && coolDown != chargingSpeed) {
-                    Utils.writeValue(cool_down, String.valueOf(chargingSpeed));
-                    Log.d("DeviceSettings", "Battery Temperature: " + battTemp + "\n" + "Battery Capacity: " + battCap + "%" + "\n");
-                } else if (chargingSpeed == 0) {
-                    // Setting cool down values based on battery temperature
-                    if (battTemp >= 39.5 && coolDown != 2 && coolDown == 0) {
-                        Utils.writeValue(cool_down, "2");
-                        Log.d("DeviceSettings", "Battery Temperature: " + battTemp + "\n" + "Battery Capacity: " + battCap + "%" + "\n" + "Applied cool down");
-                    } else if (battTemp <= 38.5 && coolDown != 0 && coolDown == 2) {
-                        Utils.writeValue(cool_down, "0");
-                        Log.d("DeviceSettings", "Battery Temperature: " + battTemp + "\n" + "Battery Capacity: " + battCap + "%" + "\n" + "No cool down applied");
-                    }
-                }
-            }
-
-            // Charging limit based on user selected battery percentage
-            if (((userSelectedChargingLimit == battCap) || (userSelectedChargingLimit < battCap)) && chargingLimit != 0) {
-                if (isCoolDownAvailable()) Utils.writeValue(cool_down, "0");
-                Utils.writeValue(mmi_charging_enable, "0");
-                Log.d("DeviceSettings", "Battery Temperature: " + battTemp + ", Battery Capacity: " + battCap + "%, " + "User selected charging limit: " + userSelectedChargingLimit + "%. Stopped charging");
-                AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_title), context.getString(R.string.smart_charging_stoppped_notif));
-            } else if (userSelectedChargingLimit > battCap && chargingLimit != 1) {
-                Utils.writeValue(mmi_charging_enable, "1");
-                AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
-                Log.d("DeviceSettings", "Charging...");
-            }
+            updateChargingStatus(context);
         }
     };
-    public BroadcastReceiver mconnectionInfo = new BroadcastReceiver() {
+
+    private BroadcastReceiver mconnectionInfo = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             int battCap = Integer.parseInt(Utils.readLine(battery_capacity));
-            if (intent.getAction() == Intent.ACTION_POWER_CONNECTED) {
+            if (Intent.ACTION_POWER_CONNECTED.equals(intent.getAction())) {
                 if (!mconnectionInfoReceiver) {
                     IntentFilter batteryInfo = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                     context.getApplicationContext().registerReceiver(mBatteryInfo, batteryInfo);
@@ -99,9 +68,10 @@ public class SmartChargingService extends Service {
                     AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
                 }
                 Log.d("DeviceSettings", "Charger/USB Connected");
-            } else if (intent.getAction() == Intent.ACTION_POWER_DISCONNECTED) {
-                if (sharedPreferences.getBoolean("reset_stats", false) && sharedPreferences.getInt("seek_bar", 95) == battCap)
+            } else if (Intent.ACTION_POWER_DISCONNECTED.equals(intent.getAction())) {
+                if (sharedPreferences.getBoolean("reset_stats", false) && sharedPreferences.getInt("seek_bar", 95) == battCap) {
                     resetStats();
+                }
                 if (mconnectionInfoReceiver) {
                     context.getApplicationContext().unregisterReceiver(mBatteryInfo);
                     mconnectionInfoReceiver = false;
@@ -111,6 +81,55 @@ public class SmartChargingService extends Service {
             }
         }
     };
+
+    private void updateChargingStatus(final Context context) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // Read current values immediately
+                    float battTemp = ((float) Integer.parseInt(Utils.readLine(battery_temperature))) / 10;
+                    int battCap = Integer.parseInt(Utils.readLine(battery_capacity));
+                    int coolDown = Integer.parseInt(Utils.readLine(cool_down));
+                    int currentmA = -(Integer.parseInt(Utils.readLine(current)));
+                    int chargingLimit = Integer.parseInt(Utils.readLine(mmi_charging_enable));
+                    int userSelectedChargingLimit = sharedPreferences.getInt("seek_bar", 95);
+                    int chargingSpeed = Settings.Secure.getInt(context.getContentResolver(), "charging_speed", 0);
+
+                    Log.d("DeviceSettings", "Battery Temperature: " + battTemp + ", Battery Capacity: " + battCap + "%, Charging Speed: " + currentmA + " mA, Cool Down: " + coolDown);
+
+                    if (isCoolDownAvailable() && chargingLimit == 1) {
+                        if (chargingSpeed != 0 && coolDown != chargingSpeed) {
+                            Utils.writeValue(cool_down, String.valueOf(chargingSpeed));
+                            Log.d("DeviceSettings", "Updated cool down to " + chargingSpeed);
+                        } else if (chargingSpeed == 0) {
+                            if (battTemp >= 39.5 && coolDown != 2 && coolDown == 0) {
+                                Utils.writeValue(cool_down, "2");
+                                Log.d("DeviceSettings", "Applied cool down due to high temperature");
+                            } else if (battTemp <= 38.5 && coolDown != 0 && coolDown == 2) {
+                                Utils.writeValue(cool_down, "0");
+                                Log.d("DeviceSettings", "Removed cool down due to low temperature");
+                            }
+                        }
+                    }
+
+                    // Check and enforce charging limit
+                    if (((userSelectedChargingLimit == battCap) || (userSelectedChargingLimit < battCap)) && chargingLimit != 0) {
+                        if (isCoolDownAvailable()) Utils.writeValue(cool_down, "0");
+                        Utils.writeValue(mmi_charging_enable, "0");
+                        Log.d("DeviceSettings", "Stopped charging as battery reached user selected limit");
+                        AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_title), context.getString(R.string.smart_charging_stoppped_notif));
+                    } else if (userSelectedChargingLimit > battCap && chargingLimit != 1) {
+                        Utils.writeValue(mmi_charging_enable, "1");
+                        AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
+                        Log.d("DeviceSettings", "Charging continues");
+                    }
+                } catch (NumberFormatException e) {
+                    Log.e("DeviceSettings", "Error reading or parsing file values", e);
+                }
+            }
+        });
+    }
 
     public static boolean isCoolDownAvailable() {
         return Utils.fileWritable(cool_down);
@@ -128,24 +147,54 @@ public class SmartChargingService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SmartCharging::WakeLock");
+        wakeLock.acquire();
+
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        sharedPreferences.registerOnSharedPreferenceChangeListener(prefChangeListener);
+
         IntentFilter connectionInfo = new IntentFilter();
         connectionInfo.addAction(Intent.ACTION_POWER_CONNECTED);
         connectionInfo.addAction(Intent.ACTION_POWER_DISCONNECTED);
         registerReceiver(mconnectionInfo, connectionInfo);
+
+        AppNotification.Send(
+            this,
+            Charging_Notification_Channel_ID,
+            getString(R.string.smart_charging_title),
+            getString(R.string.smart_charging_status_notif)
+        );
+        startForeground(Charging_Notification_Channel_ID, AppNotification.getNotification());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
         unregisterReceiver(mconnectionInfo);
-        if (mconnectionInfoReceiver) getApplicationContext().unregisterReceiver(mBatteryInfo);
-        if (AppNotification.NotificationSent)
+        if (mconnectionInfoReceiver) {
+            getApplicationContext().unregisterReceiver(mBatteryInfo);
+        }
+        if (AppNotification.NotificationSent) {
             AppNotification.Cancel(getApplicationContext(), Charging_Notification_Channel_ID);
+        }
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(prefChangeListener);
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
+
+    private OnSharedPreferenceChangeListener prefChangeListener = new OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            if (key.equals("seek_bar")) {
+                updateChargingStatus(getApplicationContext());
+            }
+        }
+    };
 }
