@@ -40,12 +40,23 @@ public class AodLightService extends Service {
     private static final String TAG = "AodLightService";
     private static final String POWER_STATUS_PATH = "/sys/kernel/oppo_display/power_status";
     private static final String LIGHT_MODE_PATH = "/sys/kernel/oppo_display/aod_light_mode_set";
+    private static final String CHANNEL_ID = "AodLightServiceChannel";
 
     private ScheduledExecutorService scheduler;
 
     @Override
     public void onCreate() {
         super.onCreate();
+
+        createNotificationChannel();
+        Notification notification = new Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("AOD Light Service")
+                .setContentText("AOD Light Service is running")
+                .setSmallIcon(R.drawable.ic_service_icon)
+                .build();
+
+        startForeground(1, notification);
+
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(this::checkAndSetLightMode, 0, 500, TimeUnit.MILLISECONDS);
     }
@@ -86,6 +97,18 @@ public class AodLightService extends Service {
             writer.flush();
         } catch (IOException e) {
             Log.e(TAG, "Error setting light mode", e);
+        }
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel serviceChannel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "AOD Light Service Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(serviceChannel);
         }
     }
 }

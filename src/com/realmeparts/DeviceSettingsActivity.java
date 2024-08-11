@@ -19,12 +19,15 @@ package com.realmeparts;
 
 import android.app.Fragment;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.Settings;
 
 import com.android.settingslib.collapsingtoolbar.CollapsingToolbarBaseActivity;
 
 public class DeviceSettingsActivity extends CollapsingToolbarBaseActivity {
 
     private DeviceSettings mDeviceSettingsFragment;
+    private AodContentObserver aodContentObserver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +41,24 @@ public class DeviceSettingsActivity extends CollapsingToolbarBaseActivity {
                     .commit();
         } else {
             mDeviceSettingsFragment = (DeviceSettings) fragment;
+        }
+
+        // Register the ContentObserver
+        Handler handler = new Handler();
+        aodContentObserver = new AodContentObserver(handler, this);
+        getContentResolver().registerContentObserver(
+            Settings.Secure.getUriFor(Settings.Secure.DOZE_ALWAYS_ON),
+            true,
+            aodContentObserver
+        );
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Unregister the ContentObserver
+        if (aodContentObserver != null) {
+            getContentResolver().unregisterContentObserver(aodContentObserver);
         }
     }
 }
