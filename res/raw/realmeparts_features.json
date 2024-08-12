@@ -7,16 +7,22 @@
   "dc": [
     "RMX1931", "SAMURAI",
     "RMX1991", "RMX1992", "RMX1993",
-    "RMX3371"
+    "RMX3371", "BITRA", "RE5473",
+    "RMX3370", "RE879AL1", "RMX2071",
+    "RMX2075", "RMX2076"
   ],
   "hbm": [
     "RMX1931", "SAMURAI",
     "RMX1991", "RMX1992", "RMX1993",
-    "RMX3371"
+    "RMX3371", "BITRA", "RE5473",
+    "RMX3370", "RE879AL1", "RMX2071",
+    "RMX2075", "RMX2076"
   ],
   "srgb": [
     "RMX1931", "SAMURAI",
     "RMX1991", "RMX1992", "RMX1993",
-    "RMX3371"
+    "RMX3371", "BITRA", "RE5473",
+    "RMX3370", "RE879AL1", "RMX2071",
+    "RMX2075", "RMX2076"
   ]
 }
