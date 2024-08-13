@@ -6,6 +6,9 @@ on boot
     chown system system /sys/kernel/oppo_display/LCM_CABC
     chmod 0644 /sys/kernel/oppo_display/LCM_CABC
 
+    # Disable performance profile by default
+    setprop perf_profile 0
+
     # CABC off
 on property:persist.cabc_profile=0
     write /sys/kernel/oppo_display/cabc 0
