@@ -19,7 +19,9 @@ package com.realmeparts;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -46,6 +48,7 @@ public class Utils {
     private static volatile Thread sMainThread;
     private static volatile Handler sMainThreadHandler;
     private static volatile ExecutorService sThreadExecutor;
+    public static Context context;
 
     /**
      * Write a string value to the specified file.
@@ -314,5 +317,12 @@ public class Utils {
     public static void stopService(Context context, Class<?> serviceClass ) {
         context.stopServiceAsUser(new Intent(context, serviceClass), UserHandle.CURRENT);
         Log.d("DeviceSettings", "Stopping "+ serviceClass.getCanonicalName());
+    }
+
+    public static boolean isPowerConnected(Context context) {
+        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = context.registerReceiver(null, filter);
+        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        return status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
     }
 }

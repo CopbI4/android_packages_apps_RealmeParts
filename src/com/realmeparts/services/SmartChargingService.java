@@ -65,9 +65,11 @@ public class SmartChargingService extends Service {
                     IntentFilter batteryInfo = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
                     context.getApplicationContext().registerReceiver(mBatteryInfo, batteryInfo);
                     mconnectionInfoReceiver = true;
-                    AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
                 }
                 Log.d("DeviceSettings", "Charger/USB Connected");
+                if (Utils.isPowerConnected(context)) {
+                    AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
+                }
             } else if (Intent.ACTION_POWER_DISCONNECTED.equals(intent.getAction())) {
                 if (sharedPreferences.getBoolean("reset_stats", false) && sharedPreferences.getInt("seek_bar", 95) == battCap) {
                     resetStats();
@@ -75,9 +77,9 @@ public class SmartChargingService extends Service {
                 if (mconnectionInfoReceiver) {
                     context.getApplicationContext().unregisterReceiver(mBatteryInfo);
                     mconnectionInfoReceiver = false;
-                    AppNotification.Cancel(context, Charging_Notification_Channel_ID);
                 }
                 Log.d("DeviceSettings", "Charger/USB Disconnected");
+                AppNotification.Cancel(context, Charging_Notification_Channel_ID);
             }
         }
     };
@@ -118,10 +120,14 @@ public class SmartChargingService extends Service {
                         if (isCoolDownAvailable()) Utils.writeValue(cool_down, "0");
                         Utils.writeValue(mmi_charging_enable, "0");
                         Log.d("DeviceSettings", "Stopped charging as battery reached user selected limit");
-                        AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_title), context.getString(R.string.smart_charging_stoppped_notif));
+                        if (Utils.isPowerConnected(context)) {
+                            AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_title), context.getString(R.string.smart_charging_stoppped_notif));
+                        }
                     } else if (userSelectedChargingLimit > battCap && chargingLimit != 1) {
                         Utils.writeValue(mmi_charging_enable, "1");
-                        AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
+                        if (Utils.isPowerConnected(context)) {
+                            AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
+                        }
                         Log.d("DeviceSettings", "Charging continues");
                     }
                 } catch (NumberFormatException e) {
@@ -159,13 +165,15 @@ public class SmartChargingService extends Service {
         connectionInfo.addAction(Intent.ACTION_POWER_DISCONNECTED);
         registerReceiver(mconnectionInfo, connectionInfo);
 
-        AppNotification.Send(
-            this,
-            Charging_Notification_Channel_ID,
-            getString(R.string.smart_charging_title),
-            getString(R.string.smart_charging_status_notif)
-        );
-        startForeground(Charging_Notification_Channel_ID, AppNotification.getNotification());
+        if (Utils.isPowerConnected(this)) {
+            AppNotification.Send(
+                this,
+                Charging_Notification_Channel_ID,
+                getString(R.string.smart_charging_title),
+                getString(R.string.smart_charging_status_notif)
+            );
+            startForeground(Charging_Notification_Channel_ID, AppNotification.getNotification());
+        }
     }
 
     @Override
