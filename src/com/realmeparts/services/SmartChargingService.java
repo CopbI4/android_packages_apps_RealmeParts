@@ -89,14 +89,39 @@ public class SmartChargingService extends Service {
             @Override
             public void run() {
                 try {
-                    // Read current values immediately
-                    float battTemp = ((float) Integer.parseInt(Utils.readLine(battery_temperature))) / 10;
-                    int battCap = Integer.parseInt(Utils.readLine(battery_capacity));
-                    int coolDown = Integer.parseInt(Utils.readLine(cool_down));
-                    int currentmA = -(Integer.parseInt(Utils.readLine(current)));
-                    int chargingLimit = Integer.parseInt(Utils.readLine(mmi_charging_enable));
+                    // Retry logic for file operations
+                    int maxRetries = 3;
+                    int retryCount = 0;
+                    float battTemp = 0;
+                    int battCap = 0;
+                    int coolDown = 0;
+                    int currentmA = 0;
+                    int chargingLimit = 0;
                     int userSelectedChargingLimit = sharedPreferences.getInt("seek_bar", 95);
                     int chargingSpeed = Settings.Secure.getInt(context.getContentResolver(), "charging_speed", 0);
+
+                    while (retryCount < maxRetries) {
+                        try {
+                            battTemp = ((float) Integer.parseInt(Utils.readLine(battery_temperature))) / 10;
+                            battCap = Integer.parseInt(Utils.readLine(battery_capacity));
+                            coolDown = Integer.parseInt(Utils.readLine(cool_down));
+                            currentmA = -(Integer.parseInt(Utils.readLine(current)));
+                            chargingLimit = Integer.parseInt(Utils.readLine(mmi_charging_enable));
+                            break;
+                        } catch (NumberFormatException e) {
+                            retryCount++;
+                            if (retryCount >= maxRetries) {
+                                Log.e("DeviceSettings", "Error reading or parsing file values after retries", e);
+                                return;
+                            }
+                            // Wait before retrying
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException ie) {
+                                Log.e("DeviceSettings", "Interrupted while waiting to retry file read", ie);
+                            }
+                        }
+                    }
 
                     Log.d("DeviceSettings", "Battery Temperature: " + battTemp + ", Battery Capacity: " + battCap + "%, Charging Speed: " + currentmA + " mA, Cool Down: " + coolDown);
 
@@ -130,8 +155,8 @@ public class SmartChargingService extends Service {
                         }
                         Log.d("DeviceSettings", "Charging continues");
                     }
-                } catch (NumberFormatException e) {
-                    Log.e("DeviceSettings", "Error reading or parsing file values", e);
+                } catch (Exception e) {
+                    Log.e("DeviceSettings", "Exception in updateChargingStatus", e);
                 }
             }
         });
