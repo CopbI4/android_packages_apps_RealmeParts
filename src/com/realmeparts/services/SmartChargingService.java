@@ -39,11 +39,21 @@ public class SmartChargingService extends Service {
     private static final int Charging_Notification_Channel_ID = 0x110110;
     private static final boolean Debug = false;
     private static final boolean resetBatteryStats = false;
+
+    // Original paths
     public static String cool_down = "/sys/class/power_supply/battery/cool_down";
     public static String current = "/sys/class/power_supply/battery/current_now";
     public static String mmi_charging_enable = "/sys/class/power_supply/battery/mmi_charging_enable";
     public static String battery_capacity = "/sys/class/power_supply/battery/capacity";
     public static String battery_temperature = "/sys/class/power_supply/battery/temp";
+
+    // New paths
+    public static String new_cool_down = "/sys/devices/virtual/oplus_chg/battery/cool_down";
+    public static String new_current = "/sys/devices/virtual/oplus_chg/battery/current_now";
+    public static String new_mmi_charging_enable = "/sys/devices/virtual/oplus_chg/battery/mmi_charging_enable";
+    public static String new_battery_capacity = "/sys/devices/virtual/oplus_chg/battery/capacity";
+    public static String new_battery_temperature = "/sys/devices/virtual/oplus_chg/battery/temp";
+
     private boolean mconnectionInfoReceiver;
     private SharedPreferences sharedPreferences;
     private PowerManager.WakeLock wakeLock;
@@ -59,7 +69,7 @@ public class SmartChargingService extends Service {
     private BroadcastReceiver mconnectionInfo = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            int battCap = Integer.parseInt(Utils.readLine(battery_capacity));
+            int battCap = Integer.parseInt(Utils.readLine(getAvailablePath(battery_capacity, new_battery_capacity)));
             if (Intent.ACTION_POWER_CONNECTED.equals(intent.getAction())) {
                 if (!mconnectionInfoReceiver) {
                     IntentFilter batteryInfo = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
@@ -102,11 +112,11 @@ public class SmartChargingService extends Service {
 
                     while (retryCount < maxRetries) {
                         try {
-                            battTemp = ((float) Integer.parseInt(Utils.readLine(battery_temperature))) / 10;
-                            battCap = Integer.parseInt(Utils.readLine(battery_capacity));
-                            coolDown = Integer.parseInt(Utils.readLine(cool_down));
-                            currentmA = -(Integer.parseInt(Utils.readLine(current)));
-                            chargingLimit = Integer.parseInt(Utils.readLine(mmi_charging_enable));
+                            battTemp = ((float) Integer.parseInt(Utils.readLine(getAvailablePath(battery_temperature, new_battery_temperature)))) / 10;
+                            battCap = Integer.parseInt(Utils.readLine(getAvailablePath(battery_capacity, new_battery_capacity)));
+                            coolDown = Integer.parseInt(Utils.readLine(getAvailablePath(cool_down, new_cool_down)));
+                            currentmA = -(Integer.parseInt(Utils.readLine(getAvailablePath(current, new_current))));
+                            chargingLimit = Integer.parseInt(Utils.readLine(getAvailablePath(mmi_charging_enable, new_mmi_charging_enable)));
                             break;
                         } catch (NumberFormatException e) {
                             retryCount++;
@@ -127,14 +137,14 @@ public class SmartChargingService extends Service {
 
                     if (isCoolDownAvailable() && chargingLimit == 1) {
                         if (chargingSpeed != 0 && coolDown != chargingSpeed) {
-                            Utils.writeValue(cool_down, String.valueOf(chargingSpeed));
+                            Utils.writeValue(getAvailablePath(cool_down, new_cool_down), String.valueOf(chargingSpeed));
                             Log.d("DeviceSettings", "Updated cool down to " + chargingSpeed);
                         } else if (chargingSpeed == 0) {
                             if (battTemp >= 39.5 && coolDown != 2 && coolDown == 0) {
-                                Utils.writeValue(cool_down, "2");
+                                Utils.writeValue(getAvailablePath(cool_down, new_cool_down), "2");
                                 Log.d("DeviceSettings", "Applied cool down due to high temperature");
                             } else if (battTemp <= 38.5 && coolDown != 0 && coolDown == 2) {
-                                Utils.writeValue(cool_down, "0");
+                                Utils.writeValue(getAvailablePath(cool_down, new_cool_down), "0");
                                 Log.d("DeviceSettings", "Removed cool down due to low temperature");
                             }
                         }
@@ -142,14 +152,14 @@ public class SmartChargingService extends Service {
 
                     // Check and enforce charging limit
                     if (((userSelectedChargingLimit == battCap) || (userSelectedChargingLimit < battCap)) && chargingLimit != 0) {
-                        if (isCoolDownAvailable()) Utils.writeValue(cool_down, "0");
-                        Utils.writeValue(mmi_charging_enable, "0");
+                        if (isCoolDownAvailable()) Utils.writeValue(getAvailablePath(cool_down, new_cool_down), "0");
+                        Utils.writeValue(getAvailablePath(mmi_charging_enable, new_mmi_charging_enable), "0");
                         Log.d("DeviceSettings", "Stopped charging as battery reached user selected limit");
                         if (Utils.isPowerConnected(context)) {
                             AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_title), context.getString(R.string.smart_charging_stoppped_notif));
                         }
                     } else if (userSelectedChargingLimit > battCap && chargingLimit != 1) {
-                        Utils.writeValue(mmi_charging_enable, "1");
+                        Utils.writeValue(getAvailablePath(mmi_charging_enable, new_mmi_charging_enable), "1");
                         if (Utils.isPowerConnected(context)) {
                             AppNotification.Send(context, Charging_Notification_Channel_ID, context.getString(R.string.smart_charging_status_notif), "");
                         }
@@ -162,8 +172,12 @@ public class SmartChargingService extends Service {
         });
     }
 
+    private String getAvailablePath(String originalPath, String newPath) {
+        return Utils.fileExists(newPath) ? newPath : originalPath;
+    }
+
     public static boolean isCoolDownAvailable() {
-        return Utils.fileWritable(cool_down);
+        return Utils.fileWritable(cool_down) || Utils.fileWritable(new_cool_down);
     }
 
     public static void resetStats() {

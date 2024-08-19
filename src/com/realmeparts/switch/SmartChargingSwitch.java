@@ -27,7 +27,8 @@ import androidx.preference.Preference.OnPreferenceChangeListener;
 
 public class SmartChargingSwitch implements OnPreferenceChangeListener {
 
-    private static final String FILE = "/sys/class/power_supply/battery/mmi_charging_enable";
+    private static final String FILE1 = "/sys/class/power_supply/battery/mmi_charging_enable";
+    private static final String FILE2 = "/sys/devices/virtual/oplus_chg/battery/mmi_charging_enable";
     private static Context mContext;
 
     public SmartChargingSwitch(Context context) {
@@ -35,10 +36,12 @@ public class SmartChargingSwitch implements OnPreferenceChangeListener {
     }
 
     public static String getFile() {
-        if (Utils.fileWritable(FILE)) {
-            return FILE;
+        if (Utils.fileWritable(FILE1)) {
+            return FILE1;
+        } else if (Utils.fileWritable(FILE2)) {
+            return FILE2;
         }
-        return null;
+            return null;
     }
 
     public static boolean isSupported() {
@@ -63,7 +66,7 @@ public class SmartChargingSwitch implements OnPreferenceChangeListener {
                 DeviceSettings.mSeekBarPreference.setEnabled(false);
                 DeviceSettings.mResetStats.setEnabled(false);
                 DeviceSettings.mChargingSpeed.setEnabled(false);
-                Utils.writeValue(FILE, "1");
+                Utils.writeValue(getFile(), "1");
             }
         } catch (Exception e) {
             Log.e("DeviceSettings", "Error changing preference: " + e.toString());
