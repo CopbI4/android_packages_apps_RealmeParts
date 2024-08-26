@@ -31,7 +31,6 @@ import androidx.preference.PreferenceManager;
 public class GameModeSwitch implements OnPreferenceChangeListener {
     public static final int GameMode_Notification_Channel_ID = 0x11011;
     private static final String FILE = "/proc/touchpanel/game_switch_enable";
-    private static final boolean GameMode = false;
     private static Context mContext;
     private static NotificationManager mNotificationManager;
     private static int userSelectedDndMode;
@@ -53,7 +52,8 @@ public class GameModeSwitch implements OnPreferenceChangeListener {
     }
 
     public static boolean isCurrentlyEnabled(Context context) {
-        return Utils.getFileValueAsBoolean(getFile(), false);
+        String fileContent = Utils.getFileValue(getFile(), "0");
+        return fileContent.startsWith("1");
     }
 
     public static boolean checkNotificationPolicy(Context context) {
@@ -65,20 +65,26 @@ public class GameModeSwitch implements OnPreferenceChangeListener {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
         if (!checkNotificationPolicy(mContext)) {
-            //Launch Do Not Disturb Access settings
+            // Launch Do Not Disturb Access settings
             Intent DNDAccess = new Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
             mContext.startActivity(DNDAccess);
-        } else if (isCurrentlyEnabled(mContext)) {
-            userSelectedDndMode = mContext.getSystemService(NotificationManager.class).getCurrentInterruptionFilter();
-            if (sharedPreferences.getBoolean("dnd", false)) activateDND();
-            AppNotification.Send(mContext, GameMode_Notification_Channel_ID, mContext.getString(R.string.game_mode_title), mContext.getString(R.string.game_mode_notif_content));
-            ShowToast();
-        } else if (!isCurrentlyEnabled(mContext)) {
-            if (sharedPreferences.getBoolean("dnd", false))
-                mNotificationManager.setInterruptionFilter(userSelectedDndMode);
-            AppNotification.Cancel(mContext, GameMode_Notification_Channel_ID);
-            ShowToast();
+            return;
         }
+
+        if (isCurrentlyEnabled(mContext)) {
+            userSelectedDndMode = mContext.getSystemService(NotificationManager.class).getCurrentInterruptionFilter();
+            if (sharedPreferences.getBoolean("dnd", false)) {
+                activateDND();
+            }
+            AppNotification.Send(mContext, GameMode_Notification_Channel_ID, mContext.getString(R.string.game_mode_title), mContext.getString(R.string.game_mode_notif_content));
+        } else {
+            if (sharedPreferences.getBoolean("dnd", false)) {
+                mNotificationManager.setInterruptionFilter(userSelectedDndMode);
+            }
+            AppNotification.Cancel(mContext, GameMode_Notification_Channel_ID);
+        }
+
+        ShowToast();
     }
 
     public static void activateDND() {
@@ -89,11 +95,13 @@ public class GameModeSwitch implements OnPreferenceChangeListener {
 
     public static void ShowToast() {
         if (isCurrentlyEnabled(mContext)) {
-            Toast.makeText(mContext, "GameMode is activated. ", Toast.LENGTH_SHORT).show();
-        } else
-            Toast.makeText(mContext, "GameMode is deactivated. ", Toast.LENGTH_SHORT).show();
+            Toast.makeText(mContext, "GameMode is activated.", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(mContext, "GameMode is deactivated.", Toast.LENGTH_SHORT).show();
+        }
     }
 
+    @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         Boolean enabled = (Boolean) newValue;
         Utils.writeValue(getFile(), enabled ? "1" : "0");
