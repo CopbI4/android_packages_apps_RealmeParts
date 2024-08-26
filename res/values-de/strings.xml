@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2014-2017 The OmniROM Project
+     Copyright (C) 2024 Hyperteam
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+          http://www.apache.org/licenses/LICENSE-2.0
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<resources>
+    <string name="device_title">Realme Einstellungen</string>
+    <string name="device_summary">Ändert Realme-spezifische Geräteeinstellungen</string>
+    <string name="display_title">Display</string>
+    <string name="misc_title">Diverse Einstellungen</string>
+
+    <!-- Ambient settings -->
+    <string name="ambient_enable">Nutze Ambient-Display</string>
+
+    <!-- CABC -->
+    <string name="cabc_title">CABC Modus</string>
+    <string name="cabc_dialogTitle">CABC Profile</string>
+    <string name="cabc_off">Aus</string>
+    <string name="cabc_normal">An</string>
+    <string name="cabc_balanced">Ausgewogener Modus</string>
+    <string name="cabc_aggressive">Super-Energiespar-Modus</string>
+    <!-- Charging -->
+    <string name="smart_charging_main_title">Akku</string>
+    <string name="smart_charging_title">Smart Charging</string>
+    <string name="smart_charging_summary">Hilft bei der Abkühlung &amp; schützt auch vor Überladung des Gerätes.</string>
+    <string name="reset_stats_title">Akkustatistik zurücksetzen</string>
+    <string name="reset_stats_summary">Die Akkustatistiken werden zurückgesetzt, wenn die Ladegrenze erreicht ist.</string>
+    <string name="smart_charging_status_notif">Smart Charging läuft.</string>
+    <string name="smart_charging_stoppped_notif">Die Ladegrenze ist erreicht, der Ladevorgang wurde gestoppt.</string>
+    <!-- DC dimming -->
+    <string name="dc_mode_summary">DC-Dimming reduziert die Belastung der Augen bei schlechten Lichtverhältnissen, kann aber zu einer geringeren Bildqualität und schlechteren Farbwiedergabe führen.</string>
+    <string name="dc_mode_title">DC-Dimming</string>
+    <string name="tile_dc_mode">DC-Dimming</string>
+    <!-- HBM mode -->
+    <string name="hbm_mode_summary">Höchste Helligkeit für bessere Sichtbarkeit im Außenbereich.</string>
+    <string name="hbm_mode_title">Modus für hohe Helligkeit</string>
+    <string name="tile_hbm_mode">Modus für hohe Helligkeit</string>
+    <!-- srgb mode -->
+    <string name="srgb_mode_summary">sRGB-Modus für eine einfachere Farbdarstellung.</string>
+    <string name="srgb_mode_title">sRGB-Modus</string>
+    <string name="tile_srgb_mode">sRGB</string>
+    <!-- otg mode -->
+    <string name="otg_mode_summary">Aktivieren der USB-OTG-Stromversorgung für externe Kopfhörer und Flash-Laufwerke.</string>
+    <string name="otg_mode_title">Aktiviere USB-OTG</string>
+    <string name="tile_otg_mode">Aktiviere USB-OTG</string>
+    <!-- game mode -->
+    <string name="game_mode_summary">Erhöhung der Abtastrate. Aktiviert den Performance-Modus.\nDie Verwendung des Spielmodus beeinträchtigt die Akkulaufzeit erheblich.</string>
+    <string name="game_mode_title">Spielmodus</string>
+    <string name="tile_game_mode">Spielmodus</string>
+    <string name="dnd_title">Bitte nicht stören</string>
+    <string name="dnd_summary">Bitte nicht stören wird aktiviert, wenn der Spielmodus aktiviert ist.</string>
+    <string name="game_mode_notif_content">Spielmodus ist aktiviert</string>
+    <!-- fps info -->
+    <string name="fps_info_title">FPS-Überlagerung</string>
+    <string name="fps_info_summary">Overlay mit aktuellen Bildern pro Sekunde anzeigen.</string>
+
+    <!-- Unsupported -->
+    <string name="unsupported">nicht unterstützt</string>
+</resources>
